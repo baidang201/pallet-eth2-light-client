@@ -1,6 +1,6 @@
-ethereum_network = "Mainnet"
-beacon_endpoint = "https://lodestar-mainnet.chainsafe.io"
-eth1_endpoint = "https://mainnet.infura.io/v3/ETH1_INFURA_API_KEY"
+ethereum_network = "Goerli"
+beacon_endpoint = "https://lodestar-goerli.chainsafe.io"
+eth1_endpoint = "https://goerli.infura.io/v3/ETH1_INFURA_API_KEY"
 eth_requests_timeout_seconds = 30
 validate_updates = true
 verify_bls_signature = true
