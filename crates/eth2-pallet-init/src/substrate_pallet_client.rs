@@ -310,7 +310,7 @@ impl EthClientPalletTrait for EthClientPallet {
 				block_header: decoded_header,
 			};
 			let tx =
-				tangle::runtime_types::tangle_standalone_runtime::RuntimeCall::Eth2Client(call);
+				tangle::runtime_types::node_template_runtime::RuntimeCall::Eth2Client(call);
 			txes.push(tx);
 		}
 
