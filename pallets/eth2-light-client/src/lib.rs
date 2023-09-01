@@ -91,7 +91,7 @@ use frame_support::{
 use sp_std::{convert::TryInto, prelude::*};
 use tree_hash::TreeHash;
 use webb_proposals::TypedChainId;
-
+use frame_support::log;
 pub use pallet::*;
 
 use bitvec::prelude::{BitVec, Lsb0};
@@ -378,17 +378,33 @@ pub mod pallet {
 			args: Box<InitInput<T::AccountId>>,
 		) -> DispatchResultWithPostInfo {
 			let signer = ensure_signed(origin)?;
+			log::info!(
+				"#### init  {:?}   !<FinalizedBeaconHeader<T>>::contains_key(typed_chain_id) AlreadyInitialized\n!",
+				!<FinalizedBeaconHeader<T>>::contains_key(typed_chain_id),
+			);
+
 			ensure!(
 				!<FinalizedBeaconHeader<T>>::contains_key(typed_chain_id),
 				Error::<T>::AlreadyInitialized
 			);
 
 			if typed_chain_id == TypedChainId::Evm(1) {
+				log::info!(
+					"#### init  {:?}   args.validate_updates ValidateUpdatesParameterError\n!",
+					args.validate_updates,
+				);
+
 				ensure!(
 					args.validate_updates,
 					// The updates validation can't be disabled for mainnet
 					Error::<T>::ValidateUpdatesParameterError,
 				);
+
+				log::info!(
+					"#### init  {:?}   (args.verify_bls_signatures) || args.trusted_signer.is_some() TrustlessModeError\n!",
+					(args.verify_bls_signatures) || args.trusted_signer.is_some(),
+				);
+
 				ensure!(
 					(args.verify_bls_signatures) || args.trusted_signer.is_some(),
 					// The client can't be executed in the trustless mode without BLS sigs
@@ -398,6 +414,12 @@ pub mod pallet {
 			}
 
 			let finalized_execution_header_hash = args.finalized_execution_header.calculate_hash();
+			log::info!(
+				"#### init  {:?}   finalized_execution_header_hash == args.finalized_beacon_header.execution_block_hash InvalidExecutionBlock\n!",
+				finalized_execution_header_hash ==
+					args.finalized_beacon_header.execution_block_hash
+			);
+
 			ensure!(
 				finalized_execution_header_hash ==
 					args.finalized_beacon_header.execution_block_hash,
@@ -475,6 +497,11 @@ pub mod pallet {
 			block_header: BlockHeader,
 		) -> DispatchResultWithPostInfo {
 			let submitter = ensure_signed(origin)?;
+			log::info!(
+				"#### submit_execution_header  {:?}   ClientModeForChain::<T>::get(typed_chain_id) == Some(ClientMode::SubmitHeader), InvalidClientMode\n!",
+				ClientModeForChain::<T>::get(typed_chain_id) == Some(ClientMode::SubmitHeader),
+			);
+
 			ensure!(
 				ClientModeForChain::<T>::get(typed_chain_id) == Some(ClientMode::SubmitHeader),
 				Error::<T>::InvalidClientMode
@@ -489,14 +516,28 @@ pub mod pallet {
 						.unwrap_or_default()
 				});
 
+			log::info!(
+				"#### submit_execution_header  {:?}   block_hash == expected_block_hash, BlockHashesDoNotMatch\n!",
+				block_hash == expected_block_hash,
+			);
+
 			ensure!(block_hash == expected_block_hash, Error::<T>::BlockHashesDoNotMatch,);
 
+			log::info!(
+				"#### submit_execution_header  {:?}   !FinalizedExecutionBlocks::<T>::contains_key(typed_chain_id, block_header.number),, BlockAlreadySubmitted\n!",
+				!FinalizedExecutionBlocks::<T>::contains_key(typed_chain_id, block_header.number),
+			);
 			// Ensure that the block header is not already submitted then insert it.
 			ensure!(
 				!FinalizedExecutionBlocks::<T>::contains_key(typed_chain_id, block_header.number),
 				Error::<T>::BlockAlreadySubmitted
 			);
 			FinalizedExecutionBlocks::<T>::insert(typed_chain_id, block_header.number, block_hash);
+
+			log::info!(
+				"#### submit_execution_header  {:?}   FinalizedExecutionHeader::<T>::contains_key(typed_chain_id),, FinalizedExecutionHeaderNotPresent\n!",
+				FinalizedExecutionHeader::<T>::contains_key(typed_chain_id),
+			);
 
 			let finalized_execution_header = FinalizedExecutionHeader::<T>::get(typed_chain_id)
 				.ok_or(Error::<T>::FinalizedExecutionHeaderNotPresent)?;
@@ -509,6 +550,11 @@ pub mod pallet {
 					diff_between_unfinalized_head_and_tail)
 					.saturating_sub(HashesGcThreshold::<T>::get(typed_chain_id));
 
+					log::info!(
+						"#### submit_execution_header  {:?}   header_number_to_remove < finalized_execution_header.block_number,, HashesGcThresholdInsufficient\n!",
+						header_number_to_remove < finalized_execution_header.block_number,
+					);
+
 				ensure!(
 					header_number_to_remove < finalized_execution_header.block_number,
 					Error::<T>::HashesGcThresholdInsufficient,
@@ -520,14 +566,32 @@ pub mod pallet {
 			}
 
 			if block_header.number == finalized_execution_header.block_number + 1 {
+				log::info!(
+					"#### submit_execution_header  {:?}   FinalizedExecutionBlocks::<T>::contains_key(typed_chain_id),, HeaderHashDoesNotExist\n!",
+					FinalizedExecutionBlocks::<T>::contains_key(typed_chain_id,
+						finalized_execution_header.block_number,),
+				);
+
 				let finalized_execution_header_hash = FinalizedExecutionBlocks::<T>::get(
 					typed_chain_id,
 					finalized_execution_header.block_number,
 				)
 				.ok_or(Error::<T>::HeaderHashDoesNotExist)?;
+
+				log::info!(
+					"#### submit_execution_header  {:?}   block_header.parent_hash == finalized_execution_header_hash,, ChainCannotBeClosed\n!",
+					block_header.parent_hash == finalized_execution_header_hash,
+				);
+
 				ensure!(
 					block_header.parent_hash == finalized_execution_header_hash,
 					Error::<T>::ChainCannotBeClosed,
+				);
+
+
+				log::info!(
+					"#### submit_execution_header  {:?}   UnfinalizedHeadExecutionHeader::<T>::contains_key(typed_chain_id),, UnfinalizedHeaderNotPresent\n!",
+					UnfinalizedHeadExecutionHeader::<T>::contains_key(typed_chain_id),
 				);
 
 				let unfinalized_head_execution_header =
@@ -584,6 +648,11 @@ pub mod pallet {
 			trusted_signer: T::AccountId,
 		) -> DispatchResultWithPostInfo {
 			let origin = ensure_signed(origin)?;
+			log::info!(
+				"#### update_trusted_signer  {:?}  TrustedSigner::<T>::get() == Some(origin), NotTrustedSigner\n!",
+				TrustedSigner::<T>::get() == Some(origin.clone())
+			);
+
 			ensure!(TrustedSigner::<T>::get() == Some(origin), Error::<T>::NotTrustedSigner);
 			TrustedSigner::<T>::put(trusted_signer.clone());
 
@@ -704,13 +773,29 @@ impl<T: Config> Pallet<T> {
 		submitter: &T::AccountId,
 		typed_chain_id: TypedChainId,
 	) -> Result<(), DispatchError> {
+		log::info!(
+			"#### is_light_client_update_allowed  {:?}  ClientModeForChain::<T>::get(typed_chain_id) == Some(ClientMode::SubmitLightClientUpdate), InvalidClientMode\n!",
+			ClientModeForChain::<T>::get(typed_chain_id) ==
+				Some(ClientMode::SubmitLightClientUpdate)
+		);
+
 		ensure!(
 			ClientModeForChain::<T>::get(typed_chain_id) ==
 				Some(ClientMode::SubmitLightClientUpdate),
 			Error::<T>::InvalidClientMode
 		);
+
+		log::info!(
+			"#### is_light_client_update_allowed  {:?}  !Paused::<T>::get(typed_chain_id), LightClientUpdateNotAllowed\n!",
+			!Paused::<T>::get(typed_chain_id)
+		);
+
 		ensure!(!Paused::<T>::get(typed_chain_id), Error::<T>::LightClientUpdateNotAllowed);
 		if TrustedSigner::<T>::get().is_some() {
+			log::info!(
+				"#### is_light_client_update_allowed  {:?}  TrustedSigner::<T>::get() == Some(submitter.clone()),, NotTrustedSigner\n!",
+				TrustedSigner::<T>::get() == Some(submitter.clone()),
+			);
 			ensure!(
 				TrustedSigner::<T>::get() == Some(submitter.clone()),
 				Error::<T>::NotTrustedSigner
@@ -737,6 +822,11 @@ impl<T: Config> Pallet<T> {
 		typed_chain_id: TypedChainId,
 		update: &LightClientUpdate,
 	) -> Result<(), DispatchError> {
+		log::info!(
+			"#### validate_light_client_update  {:?}  	<FinalizedBeaconHeader<T>>::contains_key(typed_chain_id), LightClientUpdateNotAllowed\n!",
+			<FinalizedBeaconHeader<T>>::contains_key(typed_chain_id),
+		);
+
 		let finalized_beacon_header = Self::finalized_beacon_header(typed_chain_id)
 			.ok_or(Error::<T>::LightClientUpdateNotAllowed)?;
 		let finalized_period = compute_sync_committee_period(finalized_beacon_header.header.slot);
@@ -747,10 +837,19 @@ impl<T: Config> Pallet<T> {
 			BitVec::<u8, Lsb0>::from_slice(&update.sync_aggregate.sync_committee_bits.0);
 		let sync_committee_bits_sum: u64 = sync_committee_bits.count_ones().try_into().unwrap();
 
+		log::info!(
+			"#### validate_light_client_update  {:?}  	sync_committee_bits_sum >= MIN_SYNC_COMMITTEE_PARTICIPANTS,, InvalidSyncCommitteeBitsSum\n!",
+			sync_committee_bits_sum >= MIN_SYNC_COMMITTEE_PARTICIPANTS,
+		);
 		ensure!(
 			sync_committee_bits_sum >= MIN_SYNC_COMMITTEE_PARTICIPANTS,
 			// Invalid sync committee bits sum
 			Error::<T>::InvalidSyncCommitteeBitsSum
+		);
+
+		log::info!(
+			"#### validate_light_client_update  {:?}  	sync_committee_bits_sum * 3 >= (sync_committee_bits.len() * 2).try_into().unwrap(),, SyncCommitteeBitsSumLessThanThreshold\n!",
+			sync_committee_bits_sum * 3 >= (sync_committee_bits.len() * 2).try_into().unwrap(),
 		);
 		ensure!(
 			sync_committee_bits_sum * 3 >= (sync_committee_bits.len() * 2).try_into().unwrap(),
@@ -778,23 +877,43 @@ impl<T: Config> Pallet<T> {
 		// The active header will always be the finalized header because we don't accept updates
 		// without the finality update.
 		let active_header = &update.finality_update.header_update.beacon_header;
+		log::info!(
+			"#### verify_finality_branch {:?}, {:?}, {:?}, active_header.slot > last_finalized_beacon_header.header.slot, , ActiveHeaderSlotLessThanFinalizedSlot\n!",
+			active_header.slot > last_finalized_beacon_header.header.slot, active_header.slot, last_finalized_beacon_header.header.slot
+		);
+
 		ensure!(
 			active_header.slot > last_finalized_beacon_header.header.slot,
 			Error::<T>::ActiveHeaderSlotLessThanFinalizedSlot
 		);
 
+		log::info!(
+			"#### verify_finality_branch  {:?} update.attested_beacon_header.slot >=
+			update.finality_update.header_update.beacon_header.slot, ,  UpdateHeaderSlotLessThanFinalizedHeaderSlot\n!",
+			update.attested_beacon_header.slot >=
+				update.finality_update.header_update.beacon_header.slot
+		);
 		ensure!(
 			update.attested_beacon_header.slot >=
 				update.finality_update.header_update.beacon_header.slot,
 			Error::<T>::UpdateHeaderSlotLessThanFinalizedHeaderSlot
 		);
 
+		log::info!(
+			"#### verify_finality_branch  {:?} update.signature_slot > update.attested_beacon_header.slot, UpdateSignatureSlotLessThanAttestedHeaderSlot\n!",
+			update.signature_slot > update.attested_beacon_header.slot,
+		);
 		ensure!(
 			update.signature_slot > update.attested_beacon_header.slot,
 			Error::<T>::UpdateSignatureSlotLessThanAttestedHeaderSlot
 		);
 
+
 		let update_period = compute_sync_committee_period(active_header.slot);
+		log::info!(
+			"#### verify_finality_branch  {:?} update_period == finalized_period || update_period == finalized_period + 1, InvalidUpdatePeriod\n!",
+			update_period == finalized_period || update_period == finalized_period + 1,
+		);
 		ensure!(
 			update_period == finalized_period || update_period == finalized_period + 1,
 			Error::<T>::InvalidUpdatePeriod
@@ -803,6 +922,17 @@ impl<T: Config> Pallet<T> {
 		// Verify that the `finality_branch`, confirms `finalized_header`
 		// to match the finalized checkpoint root saved in the state of `attested_header`.
 		let branch = convert_branch(&update.finality_update.finality_branch);
+		log::info!(
+			"#### verify_finality_branch {:?}  verify_merkle_proof 1  InvalidFinalityProof \n!",
+			merkle_proof::verify_merkle_proof(
+				update.finality_update.header_update.beacon_header.tree_hash_root(),
+				&branch,
+				FINALITY_TREE_DEPTH.try_into().unwrap(),
+				FINALITY_TREE_INDEX.try_into().unwrap(),
+				update.attested_beacon_header.state_root.0
+			),
+		);
+
 		ensure!(
 			merkle_proof::verify_merkle_proof(
 				update.finality_update.header_update.beacon_header.tree_hash_root(),
@@ -813,6 +943,12 @@ impl<T: Config> Pallet<T> {
 			),
 			Error::<T>::InvalidFinalityProof
 		);
+
+		log::info!(
+			"#### verify_finality_branch  {:?}  validate_beacon_block_header_update InvalidExecutionBlockHashProof \n!",
+			validate_beacon_block_header_update(&update.finality_update.header_update),
+		);
+
 		ensure!(
 			validate_beacon_block_header_update(&update.finality_update.header_update),
 			Error::<T>::InvalidExecutionBlockHashProof
@@ -821,6 +957,11 @@ impl<T: Config> Pallet<T> {
 		// Verify that the `next_sync_committee`, if present, actually is the next sync committee
 		// saved in the state of the `active_header`
 		if update_period != finalized_period {
+			log::info!(
+				"#### verify_finality_branch {:?}, update.sync_committee_update.is_some() ,, SyncCommitteeUpdateNotPresent\n!",
+				update.sync_committee_update.is_some(),
+			);
+
 			ensure!(
 				update.sync_committee_update.is_some(),
 				// The next sync committee should be present
@@ -828,6 +969,12 @@ impl<T: Config> Pallet<T> {
 			);
 			let sync_committee_update = update.sync_committee_update.as_ref().unwrap();
 			let branch = convert_branch(&sync_committee_update.next_sync_committee_branch);
+
+			log::info!(
+				"#### verify_finality_branch {:?}, verify_merkle_proof 2 ,, InvalidNextSyncCommitteeProof\n!",
+				update.sync_committee_update.is_some(),
+			);
+
 			ensure!(
 				merkle_proof::verify_merkle_proof(
 					sync_committee_update.next_sync_committee.tree_hash_root(),
@@ -853,18 +1000,32 @@ impl<T: Config> Pallet<T> {
 		let signature_period = compute_sync_committee_period(update.signature_slot);
 		// Verify signature period does not skip a sync committee period
 		// The acceptable signature periods are `signature_period`, `signature_period + 1`
+		log::info!(
+			"#### verify_bls_signatures {:?}, signature_period == finalized_period || signature_period == finalized_period + 1, ,, InvalidSignaturePeriod\n!",
+			signature_period == finalized_period || signature_period == finalized_period + 1,
+		);
+
 		ensure!(
 			signature_period == finalized_period || signature_period == finalized_period + 1,
 			Error::<T>::InvalidSignaturePeriod
 		);
 		// Verify sync committee aggregate signature
 		let sync_committee = if signature_period == finalized_period {
+			log::info!(
+				"#### verify_bls_signatures {:?},  Self::current_sync_committee(typed_chain_id).is_some(),,, CurrentSyncCommitteeNotSet\n!",
+				Self::current_sync_committee(typed_chain_id).is_some(),
+			);
 			ensure!(
 				Self::current_sync_committee(typed_chain_id).is_some(),
 				Error::<T>::CurrentSyncCommitteeNotSet
 			);
 			Self::current_sync_committee(typed_chain_id).unwrap()
 		} else {
+			log::info!(
+				"#### verify_bls_signatures {:?},  Self::next_sync_committee(typed_chain_id).is_some(),,, NextSyncCommitteeNotSet\n!",
+				Self::next_sync_committee(typed_chain_id).is_some(),
+			);
+
 			ensure!(
 				Self::next_sync_committee(typed_chain_id).is_some(),
 				Error::<T>::NextSyncCommitteeNotSet
@@ -874,12 +1035,22 @@ impl<T: Config> Pallet<T> {
 
 		let participant_pubkeys =
 			get_participant_pubkeys(sync_committee.pubkeys.0.as_slice(), &sync_committee_bits);
+			log::info!(
+				"#### verify_bls_signatures {:?},  Self::network_config_for_chain(typed_chain_id).is_some(),,, InvalidNetworkConfig\n!",
+				Self::network_config_for_chain(typed_chain_id).is_some(),
+			);
+
 		ensure!(
 			Self::network_config_for_chain(typed_chain_id).is_some(),
 			Error::<T>::InvalidNetworkConfig
 		);
 		let network_config = Self::network_config_for_chain(typed_chain_id).unwrap();
 		let maybe_fork_version = network_config.compute_fork_version_by_slot(update.signature_slot);
+		log::info!(
+			"#### verify_bls_signatures {:?},  maybe_fork_version.is_some(),, InvalidNetworkConfig\n!",
+			maybe_fork_version.is_some(),
+		);
+
 		ensure!(
 			maybe_fork_version.is_some(),
 			// The fork version should be present
@@ -900,6 +1071,14 @@ impl<T: Config> Pallet<T> {
 			.into_iter()
 			.map(|x| bls::PublicKey::deserialize(&x.0).unwrap())
 			.collect();
+
+			log::info!(
+				"#### verify_bls_signatures {:?}, aggregate_signature
+				.fast_aggregate_verify(signing_root.0, &pubkeys.iter().collect::<Vec<_>>()),, InvalidBlsSignature\n!",
+				aggregate_signature
+				.fast_aggregate_verify(signing_root.0, &pubkeys.iter().collect::<Vec<_>>()),
+			);
+
 		ensure!(
 			aggregate_signature
 				.fast_aggregate_verify(signing_root.0, &pubkeys.iter().collect::<Vec<_>>()),
@@ -913,6 +1092,11 @@ impl<T: Config> Pallet<T> {
 		typed_chain_id: TypedChainId,
 		update: LightClientUpdate,
 	) -> Result<(), DispatchError> {
+		log::info!(
+			"#### commit_light_client_update {:?}, Self::finalized_beacon_block_header(typed_chain_id), FinalizedBeaconHeaderNotPresent\n!",
+			<FinalizedBeaconHeader<T>>::contains_key(typed_chain_id)
+		);
+
 		let finalized_beacon_header = Self::finalized_beacon_block_header(typed_chain_id)
 			.ok_or(Error::<T>::FinalizedBeaconHeaderNotPresent)?;
 		// Update finalized header
@@ -923,6 +1107,11 @@ impl<T: Config> Pallet<T> {
 
 		if update_period == finalized_period + 1 {
 			let maybe_next_sync_committee = NextSyncCommittee::<T>::get(typed_chain_id);
+			log::info!(
+				"#### commit_light_client_update {:?}, maybe_next_sync_committee.is_some(),, NextSyncCommitteeNotPresent\n!",
+				maybe_next_sync_committee.is_some(),
+			);
+
 			ensure!(
 				maybe_next_sync_committee.is_some(),
 				// The next sync committee should be present
@@ -930,6 +1119,11 @@ impl<T: Config> Pallet<T> {
 			);
 			let next_sync_committee = maybe_next_sync_committee.unwrap();
 			CurrentSyncCommittee::<T>::insert(typed_chain_id, next_sync_committee);
+
+			log::info!(
+				"#### commit_light_client_update {:?}, update.sync_committee_update.is_some(), SyncCommitteeUpdateNotPresent\n!",
+				update.sync_committee_update.is_some()
+			);
 
 			ensure!(
 				update.sync_committee_update.is_some(),
@@ -965,13 +1159,28 @@ impl<T: Config> VerifyBlockHeaderExists for Pallet<T> {
 		typed_chain_id: TypedChainId,
 	) -> Result<bool, DispatchError> {
 		let block_number = header.number;
+		log::info!(
+			"#### verify_block_header_exists {:?}, header.hash.is_some(),, HeaderHashDoesNotExist\n!",
+			header.hash.is_some(),
+		);
+
 		ensure!(header.hash.is_some(), Error::<T>::HeaderHashDoesNotExist);
 		let block_hash = header.hash.unwrap();
 
 		let block_hash_from_storage =
 			FinalizedExecutionBlocks::<T>::get(typed_chain_id, block_number);
 
+			log::info!(
+				"#### verify_block_header_exists {:?}, block_hash_from_storage.is_some(), HeaderHashDoesNotExist\n!",
+				block_hash_from_storage.is_some(),
+			);
+
 		ensure!(block_hash_from_storage.is_some(), Error::<T>::HeaderHashDoesNotExist);
+
+		log::info!(
+			"#### verify_block_header_exists {:?}, block_hash_from_storage.unwrap() == block_hash , BlockHashesDoNotMatch\n!",
+			block_hash_from_storage.unwrap() == block_hash,
+		);
 		ensure!(block_hash_from_storage.unwrap() == block_hash, Error::<T>::BlockHashesDoNotMatch);
 
 		Ok(BlockHeader::calculate_hash(&header) == block_hash)
