@@ -57,7 +57,7 @@ sc-basic-authorship = { version = "0.10.0-dev", git = "https://github.com/parity
 substrate-frame-rpc-system = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
 pallet-transaction-payment-rpc = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
 
-webb-proposals = { git = "https://github.com/webb-tools/webb-rs.git", default-features = false, features = ["scale", "evm"] }
+webb-proposals = { git = "https://github.com/webb-tools/webb-rs.git", rev = "2cd947558cedbd29a1d26f650e3de855f6380b9f", default-features = false, features = ["scale", "evm"] }
 webb-consensus-types = { path = "../crates/consensus-types" }
 pallet-eth2-light-client-relayer-gadget = { path = "../gadget" }
 pallet-eth2-light-client-relayer-gadget-cli = { path = "../gadget/cli" }
