@@ -8,7 +8,7 @@ use eth_types::{
 	BlockHeader, H256,
 };
 
-use subxt::utils::AccountId32;
+use subxt::{error::DispatchError, utils::AccountId32};
 use webb::substrate::{
 	scale::{Decode, Encode},
 	subxt::{
@@ -44,7 +44,7 @@ pub fn convert_typed_chain_ids(
 			tangle::runtime_types::webb_proposals::header::TypedChainId::Solana(id),
 		TypedChainId::Ink(id) =>
 			tangle::runtime_types::webb_proposals::header::TypedChainId::Ink(id),
-		_ => panic!("Unsupported chain id"),
+		_ => unimplemented!("Unsupported chain id"),
 	}
 }
 
@@ -218,10 +218,21 @@ impl EthClientPallet {
 							return Ok(hash.0.into())
 						},
 						Err(err) => {
-							log::error!("tx failed {err:?}");
+							let error_msg = match err {
+								subxt::Error::Runtime(DispatchError::Module(error)) => {
+									let details = error.details()?;
+									let pallet = details.pallet.name();
+									let error = &details.variant;
+									format!("Extrinsic failed with an error: {pallet}::{error:?}")
+								},
+								_ => {
+									format!("Extrinsic failed with an error: {}", err)
+								},
+							};
+
 							return Err(std::io::Error::new(
 								std::io::ErrorKind::Other,
-								format!("Failed to get hash storage value: {err:?}"),
+								format!("Tx failed : {error_msg}"),
 							)
 							.into())
 						},
@@ -430,5 +441,5 @@ fn get_sr25519_keys_from_suri<T: AsRef<str>>(suri: T) -> anyhow::Result<Pair> {
 	}
 }
 
-#[subxt::subxt(runtime_metadata_path = "../../metadata/eth_light_client_runtime.scale")]
+#[subxt::subxt(runtime_metadata_path = "./metadata/tangle-runtime.scale")]
 pub mod tangle {}
