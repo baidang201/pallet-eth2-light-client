@@ -29,6 +29,8 @@
           nativeBuildInputs = [
             pkgs.protobuf
             pkgs.pkg-config
+            pkgs.openssl
+            pkgs.openssl.dev
             # Needed for rocksdb-sys
             pkgs.clang
             pkgs.libclang.lib

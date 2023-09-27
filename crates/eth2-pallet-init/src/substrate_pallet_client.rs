@@ -321,7 +321,7 @@ impl EthClientPalletTrait for EthClientPallet {
 				block_header: decoded_header,
 			};
 			let tx =
-				tangle::runtime_types::tangle_standalone_runtime::RuntimeCall::Eth2Client(call);
+				tangle::runtime_types::ggxchain_runtime_brooklyn::RuntimeCall::Eth2Client(call);
 			txes.push(tx);
 		}
 
@@ -441,5 +441,5 @@ fn get_sr25519_keys_from_suri<T: AsRef<str>>(suri: T) -> anyhow::Result<Pair> {
 	}
 }
 
-#[subxt::subxt(runtime_metadata_path = "./metadata/tangle-runtime.scale")]
+#[subxt::subxt(runtime_metadata_path = "./metadata/ggxchain-runtime.scale")]
 pub mod tangle {}
