@@ -71,7 +71,7 @@ webb = { version = "0.7.3", default-features = false, features = [
     "evm-runtime",
     "substrate-runtime",
 ] }
-webb-proposals = { path = "../webb-rs/proposals", default-features = false, features = [
+webb-proposals = { git = "https://github.com/ggxchain/webb-rs.git", branch = "polkadot-v0.9.43", default-features = false, features = [
     "scale",
     "evm",
 ] }
