@@ -1,0 +1,87 @@
+[package]
+name = "node-template"
+version = "4.0.0-dev"
+description = "A fresh FRAME-based Substrate node, ready for hacking."
+authors = ["Substrate DevHub <https://github.com/substrate-developer-hub>"]
+homepage = "https://substrate.io/"
+edition = "2021"
+license = "MIT-0"
+publish = false
+repository = "https://github.com/substrate-developer-hub/substrate-node-template/"
+build = "build.rs"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[[bin]]
+name = "node-template"
+
+[dependencies]
+clap = { workspace = true, features = ["derive"] }
+futures = { workspace = true, features = ["thread-pool"]}
+rand = { workspace = true }
+
+sc-cli = { workspace = true }
+sc-offchain = { workspace = true }
+sp-core = { workspace = true }
+sc-executor = { workspace = true }
+sc-network = { workspace = true }
+sc-service = { workspace = true }
+sc-telemetry = { workspace = true }
+sc-keystore = { workspace = true }
+sc-transaction-pool = { workspace = true }
+sc-transaction-pool-api = { workspace = true }
+sc-consensus-aura = { workspace = true }
+sp-consensus-aura = { workspace = true }
+sp-consensus = { workspace = true }
+sc-consensus = { workspace = true }
+sc-consensus-grandpa = { workspace = true }
+sp-consensus-grandpa = { workspace = true }
+sc-client-api = { workspace = true }
+sp-runtime = { workspace = true }
+sp-io = { workspace = true }
+sp-timestamp = { workspace = true }
+sp-inherents = { workspace = true }
+sp-keyring = { workspace = true }
+frame-system = { workspace = true }
+pallet-staking = { workspace = true }
+pallet-transaction-payment = { workspace = true }
+
+# These dependencies are used for the node template's RPCs
+jsonrpsee = { workspace = true, features = ["server"] }
+sc-rpc = { workspace = true }
+sp-api = { workspace = true }
+sc-rpc-api = { workspace = true }
+sp-blockchain = { workspace = true }
+sp-block-builder = { workspace = true }
+sc-basic-authorship = { workspace = true }
+substrate-frame-rpc-system = { workspace = true }
+pallet-transaction-payment-rpc = { workspace = true }
+
+webb-consensus-types = { path = "../crates/consensus-types" }
+pallet-eth2-light-client-relayer-gadget = { path = "../gadget" }
+pallet-eth2-light-client-relayer-gadget-cli = { path = "../gadget/cli" }
+node-template-runtime = { version = "4.0.0-dev", path = "../runtime" }
+webb-proposals = { workspace = true, features = ["scale", "evm"] }
+
+# These dependencies are used for runtime benchmarking
+frame-benchmarking = { workspace = true }
+frame-benchmarking-cli = { workspace = true }
+
+# CLI-specific dependencies
+try-runtime-cli = { workspace = true, optional = true }
+
+[build-dependencies]
+substrate-build-script-utils = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
+
+[features]
+default = []
+# Dependencies that are only required if frame-system-benchmarking benchmarking should be build.
+runtime-benchmarks = [
+	"node-template-runtime/runtime-benchmarks",
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-benchmarking-cli/runtime-benchmarks",
+]
+# Enable features that allow the runtime to be tried and debugged. Name might be subject to change
+# in the near future.
+try-runtime = ["node-template-runtime/try-runtime", "try-runtime-cli/try-runtime"]

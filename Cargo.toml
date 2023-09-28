@@ -5,6 +5,9 @@ members = [
     "eth2substrate-block-relay-rs",
     "gadget",
     "gadget/cli",
+    # We don't need node, so disabled it to make easier recompilation with other version
+    # "node",
+    # "runtime",
 ]
 
 [patch]
