@@ -1,0 +1,38 @@
+Download metadata from a substrate node, for use with `subxt` codegen
+
+Usage: subxt metadata [OPTIONS]
+
+Options:
+      --url <URL>
+          The url of the substrate node to query for metadata for codegen
+
+      --file <FILE>
+          The path to the encoded metadata file
+
+      --version <VERSION>
+          Specify the metadata version.
+          
+          - "latest": Use the latest stable version available. - "unstable": Use the unstable metadata, if present. - a number: Use a specific metadata version.
+          
+          Defaults to asking for the latest stable metadata version.
+
+  -f, --format <FORMAT>
+          The format of the metadata to display: `json`, `hex` or `bytes`
+          
+          [default: bytes]
+
+      --pallets <PALLETS>
+          Generate a subset of the metadata that contains only the types needed to represent the provided pallets.
+          
+          The returned metadata is updated to the latest available version when using the option.
+
+      --runtime-apis <RUNTIME_APIS>
+          Generate a subset of the metadata that contains only the runtime APIs needed.
+          
+          The returned metadata is updated to the latest available version when using the option.
+
+  -o, --output-file <OUTPUT_FILE>
+          Write the output of the metadata command to the provided file path
+
+  -h, --help
+          Print help (see a summary with '-h')
