@@ -70,12 +70,13 @@ zeroize = { version = "1.4.2", features = [
 subxt = "0.29.0"
 webb-relayer-utils = { git = "https://github.com/webb-tools/relayer.git" }
 webb-relayer-types = { git = "https://github.com/webb-tools/relayer.git" }
-webb = { version = "0.7.3", default-features = false, features = [
+webb = { git = "https://github.com/ggxchain/webb-rs.git", branch = "polkadot-v0.9.43", default-features = false, features = [
     "evm-runtime",
     "substrate-runtime",
 ] }
 webb-proposals = { git = "https://github.com/ggxchain/webb-rs.git", branch = "polkadot-v0.9.43", default-features = false, features = [
     "scale",
+    "serde",
     "evm",
 ] }
 

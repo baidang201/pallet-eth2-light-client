@@ -4,7 +4,7 @@
 use eth2_pallet_init::{init_pallet, substrate_pallet_client::EthClientPallet};
 use eth2_to_substrate_relay::eth2substrate_relay::Eth2SubstrateRelay;
 use std::path::PathBuf;
-use subxt::OnlineClient;
+use subxt::{ext::sp_core::Pair, OnlineClient};
 use webb_proposals::TypedChainId;
 pub mod errors;
 
@@ -49,8 +49,20 @@ pub async fn start_gadget(relayer_params: Eth2LightClientParams) {
 			.await
 			.expect("failed to connect to substrate node");
 
-	let mut eth_pallet =
-		EthClientPallet::new(api, lc_relay_config.ethereum_network.as_typed_chain_id());
+	let pair = std::fs::read_to_string(&lc_init_config.path_to_signer_secret_key)
+		.expect("failed to read secret key");
+	let pair = subxt::ext::sp_core::sr25519::Pair::from_seed_slice(pair.as_bytes());
+	let mut eth_pallet = if let Ok(pair) = pair {
+		tracing::info!(target: "relay", "=== Initializing relay with signer ===");
+		EthClientPallet::new_with_pair(
+			api,
+			pair,
+			lc_relay_config.ethereum_network.as_typed_chain_id(),
+		)
+	} else {
+		tracing::info!(target: "relay", "=== Initializing relay without signer. Alice used as default ===");
+		EthClientPallet::new(api, lc_relay_config.ethereum_network.as_typed_chain_id())
+	};
 
 	let mut relay = Eth2SubstrateRelay::init(&lc_relay_config, Box::new(eth_pallet.clone())).await;
 
