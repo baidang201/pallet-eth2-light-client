@@ -51,7 +51,7 @@ pub async fn start_gadget(relayer_params: Eth2LightClientParams) {
 
 	let pair = std::fs::read_to_string(&lc_init_config.path_to_signer_secret_key)
 		.expect("failed to read secret key");
-	let pair = subxt::ext::sp_core::sr25519::Pair::from_seed_slice(pair.as_bytes());
+	let pair = subxt::ext::sp_core::sr25519::Pair::from_string(&pair, None);
 	let mut eth_pallet = if let Ok(pair) = pair {
 		tracing::info!(target: "relay", "=== Initializing relay with signer ===");
 		EthClientPallet::new_with_pair(
