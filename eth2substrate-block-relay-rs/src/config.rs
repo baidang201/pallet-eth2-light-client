@@ -22,7 +22,7 @@ pub struct Config {
 	// Path to the file with a secret key for signer account
 	pub path_to_signer_secret_key: String,
 
-	// The Ethereum network name (Mainnet, Goerli)
+	// The Ethereum network name (Mainnet, Goerli, Sepolia)
 	pub ethereum_network: EthNetwork,
 
 	// Period of submission light client updates. Once in N epochs.

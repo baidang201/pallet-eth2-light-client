@@ -18,7 +18,7 @@ pub struct IncorrectEthNetwork;
 
 impl Display for IncorrectEthNetwork {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "Unknown Ethereum network. Possible networks: 'Mainnet', 'Goerli'")
+		write!(f, "Unknown Ethereum network. Possible networks: 'Mainnet', 'Goerli', 'Sepolia'")
 	}
 }
 
