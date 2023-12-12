@@ -587,6 +587,11 @@ impl BeaconRPCClient {
 					return Err(NoBlockForSlotError.into())
 				}
 			}
+			if let Some(code) = parse_json["code"].as_number() {
+				if code.as_u64() == Some(404) {
+					return Err(NoBlockForSlotError.into())
+				}
+			}
 		}
 		Ok(())
 	}
