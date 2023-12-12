@@ -1,6 +1,9 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[macro_use]
+extern crate alloc;
+
 use eth_types::BlockHeader;
 use frame_support::pallet_prelude::DispatchError;
 use webb_proposals::TypedChainId;

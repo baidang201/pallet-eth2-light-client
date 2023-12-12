@@ -7,7 +7,9 @@ edition = "2021"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-eth-types = { path = "../../crates/eth-types", default-features = false, features = ["eth2"] }
+eth-types = { path = "../../crates/eth-types", default-features = false, features = [
+	"eth2",
+] }
 eth2-ssz = { package = "webb-eth2-ssz", path = "../../crates/ssz", default-features = false }
 merkle-proof = { package = "webb-merkle-proof", path = "../../crates/merkle-proof", default-features = false }
 bls = { package = "webb-bls", path = "../../crates/bls", default-features = false }
@@ -24,17 +26,22 @@ sp-core = { workspace = true }
 
 log = { workspace = true }
 serde = { workspace = true, optional = true }
-codec = { package = "parity-scale-codec",workspace = true, features = ["derive", "max-encoded-len"] }
+codec = { package = "parity-scale-codec", workspace = true, features = [
+	"derive",
+	"max-encoded-len",
+] }
 scale-info = { workspace = true }
 webb-proposals = { workspace = true, features = ["scale", "evm", "substrate"] }
-ethereum-types =  { workspace = true }
-derive_more =  { workspace = true }
-rlp =  { workspace = true }
-rlp-derive =  { workspace = true }
+ethereum-types = { workspace = true }
+derive_more = { workspace = true }
+rlp = { workspace = true }
+rlp-derive = { workspace = true }
 tiny-keccak = { workspace = true }
 bitvec = { workspace = true, features = ["atomic", "alloc"] }
 hex = { workspace = true }
 webb-light-client-primitives = { workspace = true }
+
+[dev-dependencies]
 anyhow = { workspace = true }
 lazy_static = { workspace = true }
 serde_json = { workspace = true }
@@ -58,6 +65,7 @@ std = [
 	"sp-std/std",
 	"sp-core/std",
 	"hex/std",
+	"webb-light-client-primitives/std",
 
 	# Local dependencies
 	"bls/std",
@@ -66,10 +74,8 @@ std = [
 	"eth2-ssz/std",
 	"tree-hash/std",
 	"merkle-proof/std",
-	
+
 ]
-testing = [
-	"std",
-]
+testing = ["std"]
 
 try-runtime = ["frame-support/try-runtime"]

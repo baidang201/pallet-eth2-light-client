@@ -1,5 +1,7 @@
 use super::*;
 
+use alloc::vec::Vec;
+
 /// A trait for exposing the light client functionality to external pallets
 pub trait LightClientHandler {
 	/// Verifies the existence of a block header on a specified typed chain.

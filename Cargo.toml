@@ -23,7 +23,7 @@ exclude = ["pallets/light-verifier", "pallets/light-proposals"]
 
 [patch]
 [patch.crates-io]
-arbitrary = { git = "https://github.com/michaelsproul/arbitrary", rev = "a572fd8743012a4f1ada5ee5968b1b3619c427ba" }
+arbitrary = { git = "https://github.com/michaelsproul/arbitrary", rev = "a572fd8743012a4f1ada5ee5968b1b3619c427ba", default-features = false }
 
 [workspace.dependencies]
 ethereum-types = { version = "0.14.1", default-features = false }
@@ -93,10 +93,12 @@ webb-proposals = { git = "https://github.com/ggxchain/webb-rs.git", branch = "po
 
 milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", default-features = false, rev = "a6d66e4eb89015e352fb1c9f7b661ecdbb5b2176" }
 types = { git = "https://github.com/webb-tools/lighthouse.git", rev = "ef72e752eaf45f4b7eb64dd8dbb0fe088f955df8" }
-merkle_proof = { git = "https://github.com/webb-tools/lighthouse.git", rev = "ef72e752eaf45f4b7eb64dd8dbb0fe088f955df8" }
+merkle_proof = { git = "https://github.com/webb-tools/lighthouse.git", rev = "ef72e752eaf45f4b7eb64dd8dbb0fe088f955df8", default-features = false }
 tree_hash = { version = "0.5.0", features = ["arbitrary"] }
 ethereum_hashing = { version = "1.0.0-beta.2" }
-ethereum_ssz = { version = "0.5.0", features = ["arbitrary"] }
+ethereum_ssz = { version = "0.5.0", features = [
+    "arbitrary",
+], default-features = false }
 
 
 # DKG Substrate Dependencies
@@ -173,10 +175,10 @@ pallet-transaction-payment-rpc-runtime-api = { version = "4.0.0-dev", default-fe
 
 
 # These dependencies are used for runtime benchmarking
-frame-benchmarking = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+frame-benchmarking = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
 frame-benchmarking-cli = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
 frame-system-benchmarking = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
-try-runtime-cli = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+try-runtime-cli = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43", default-features = false }
 
 # local deps
-webb-light-client-primitives = { path = "./primitives" }
+webb-light-client-primitives = { path = "./primitives", default-features = false }
