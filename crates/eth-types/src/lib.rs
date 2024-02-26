@@ -140,8 +140,8 @@ pub struct BlockHeader {
 	pub base_fee_per_gas: Option<u64>,
 	pub withdrawals_root: Option<H256>,
 
-	pub blob_gas_used: Option<u64>,
-	pub excess_blob_gas: Option<u64>,
+	pub blob_gas_used: Option<U256>,
+	pub excess_blob_gas: Option<U256>,
 	pub parent_beacon_block_root: Option<H256>,
 
 	pub hash: Option<H256>,

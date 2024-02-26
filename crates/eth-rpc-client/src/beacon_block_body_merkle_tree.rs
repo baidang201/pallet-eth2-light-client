@@ -54,7 +54,7 @@ impl BeaconBlockBodyMerkleTree {
 pub struct ExecutionPayloadMerkleTree(pub MerkleTree);
 
 impl ExecutionPayloadMerkleTree {
-	pub const TREE_NUM_LEAVES: usize = 15;
+	pub const TREE_NUM_LEAVES: usize = 17;
 	pub const TREE_DEPTH: usize = 4;
 
 	pub fn new(execution_payload: &ExecutionPayload<MainnetEthSpec>) -> Self {
@@ -75,6 +75,16 @@ impl ExecutionPayloadMerkleTree {
 			execution_payload.transactions().tree_hash_root(),
 			if let Ok(withdrawals) = execution_payload.withdrawals() {
 				withdrawals.tree_hash_root()
+			} else {
+				H256::zero()
+			},
+			if let Ok(blob_gas_used) = execution_payload.blob_gas_used() {
+				blob_gas_used.tree_hash_root()
+			} else {
+				H256::zero()
+			},
+			if let Ok(excess_blob_gas) = execution_payload.excess_blob_gas() {
+				excess_blob_gas.tree_hash_root()
 			} else {
 				H256::zero()
 			},
