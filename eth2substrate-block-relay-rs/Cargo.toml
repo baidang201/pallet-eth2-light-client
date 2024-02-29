@@ -7,8 +7,8 @@ authors = { workspace = true }
 
 [dependencies]
 eth-types = { path = "../crates/eth-types", features = ["eth2"] }
-tree-hash = { package = "webb-tree-hash",  path = "../crates/tree-hash" }
-merkle-proof = { package = "webb-merkle-proof",  path = "../crates/merkle-proof" }
+tree-hash = { package = "webb-tree-hash", path = "../crates/tree-hash" }
+merkle-proof = { package = "webb-merkle-proof", path = "../crates/merkle-proof" }
 consensus-types = { package = "webb-consensus-types", path = "../crates/consensus-types" }
 eth-rpc-client = { package = "webb-eth-rpc-client", path = "../crates/eth-rpc-client" }
 eth2-pallet-init = { package = "webb-eth2-pallet-init", path = "../crates/eth2-pallet-init" }
@@ -16,11 +16,13 @@ finality-update-verify = { package = "webb-finality-update-verify", path = "../c
 lc-relay-config = { package = "webb-lc-relay-config", path = "../crates/lc-relay-config" }
 lc-relayer-context = { package = "webb-lc-relayer-context", path = "../crates/lc-relayer-context" }
 
-types =  { workspace = true }
-eth2_hashing =  { package = "ethereum_hashing", version = "1.0.0-beta.2" }
-eth2_ssz =  { package = "ethereum_ssz", version = "0.5.0", features = ["arbitrary"] }
+types = { workspace = true }
+eth2_hashing = { package = "ethereum_hashing", version = "1.0.0-beta.2" }
+eth2_ssz = { package = "ethereum_ssz", version = "0.5.0", features = [
+    "arbitrary",
+] }
 webb = { workspace = true }
-webb-proposals ={ workspace = true }
+webb-proposals = { workspace = true }
 anyhow = { workspace = true }
 funty = { workspace = true }
 sp-keyring = { version = "18.0.0", default-features = false }

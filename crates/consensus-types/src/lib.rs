@@ -6,9 +6,7 @@ extern crate alloc;
 use alloc::{vec, vec::Vec};
 use bitvec::{order::Lsb0, prelude::BitVec};
 use eth_types::{
-	eth2::{
-		DomainType, Epoch, ForkData, ForkVersion, HeaderUpdate, PublicKeyBytes, SigningData, Slot,
-	},
+	eth2::{DomainType, Epoch, ForkData, ForkVersion, PublicKeyBytes, SigningData, Slot},
 	H256,
 };
 use tree_hash::TreeHash;
@@ -112,29 +110,40 @@ pub fn get_participant_pubkeys(
 	result
 }
 
-pub fn convert_branch(branch: &[H256]) -> Vec<ethereum_types::H256> {
-	branch.iter().map(|x| x.0).collect()
+/// Verify a proof that `leaf` exists at `index` in a Merkle tree rooted at `root`.
+///
+/// The `branch` argument is the main component of the proof: it should be a list of internal
+/// node hashes such that the root can be reconstructed (in bottom-up order).
+pub fn verify_merkle_proof(
+	leaf: H256,
+	branch: &[H256],
+	depth: usize,
+	index: usize,
+	root: H256,
+) -> bool {
+	if branch.len() == depth {
+		merkle_root_from_branch(leaf, branch, depth, index) == root
+	} else {
+		false
+	}
 }
 
-pub fn validate_beacon_block_header_update(header_update: &HeaderUpdate) -> bool {
-	let branch = convert_branch(&header_update.execution_hash_branch);
-	if branch.len() != EXECUTION_PROOF_SIZE {
-		return false
+/// Compute a root hash from a leaf and a Merkle proof.
+pub fn merkle_root_from_branch(leaf: H256, branch: &[H256], depth: usize, index: usize) -> H256 {
+	assert_eq!(branch.len(), depth, "proof length should equal depth");
+
+	let mut merkle_root = leaf.0.as_bytes().to_vec();
+
+	for (i, leaf) in branch.iter().enumerate().take(depth) {
+		let ith_bit = (index >> i) & 0x01;
+		if ith_bit == 1 {
+			merkle_root = eth2_hashing::hash32_concat(leaf.0.as_bytes(), &merkle_root)[..].to_vec();
+		} else {
+			let mut input = merkle_root;
+			input.extend_from_slice(leaf.0.as_bytes());
+			merkle_root = eth2_hashing::hash(&input);
+		}
 	}
 
-	let l2_proof = &branch[0..L2_EXECUTION_PAYLOAD_PROOF_SIZE];
-	let l1_proof = &branch[L2_EXECUTION_PAYLOAD_PROOF_SIZE..EXECUTION_PROOF_SIZE];
-	let execution_payload_hash = merkle_proof::merkle_root_from_branch(
-		header_update.execution_block_hash.0,
-		l2_proof,
-		L2_EXECUTION_PAYLOAD_PROOF_SIZE,
-		L2_EXECUTION_PAYLOAD_TREE_EXECUTION_BLOCK_INDEX,
-	);
-	merkle_proof::verify_merkle_proof(
-		execution_payload_hash,
-		l1_proof,
-		BEACON_BLOCK_BODY_TREE_DEPTH,
-		L1_BEACON_BLOCK_BODY_TREE_EXECUTION_PAYLOAD_INDEX,
-		header_update.beacon_header.body_root.0,
-	)
+	H256(ethereum_types::H256::from_slice(&merkle_root))
 }

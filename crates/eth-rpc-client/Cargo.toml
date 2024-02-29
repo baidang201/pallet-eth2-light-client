@@ -6,16 +6,19 @@ license = { workspace = true }
 authors = { workspace = true }
 
 [dependencies]
-eth-types = { path = "../eth-types", default-features = false, features = ["eth2", "arbitrary"] }
+eth-types = { path = "../eth-types", default-features = false, features = [
+    "eth2",
+    "arbitrary",
+] }
 lc-relay-types = { package = "webb-lc-relay-types", path = "../lc-relay-types" }
 types = { workspace = true }
 merkle_proof = { workspace = true, features = ["arbitrary"] }
-tree_hash = {workspace = true, features = ["arbitrary"] }
-ethereum_hashing = { workspace = true }
+tree_hash = { workspace = true, features = ["arbitrary"] }
+eth2_hashing = { workspace = true }
 ethereum_ssz = { workspace = true, features = ["arbitrary"] }
 ethereum-types = { workspace = true, features = ["rlp", "serialize"] }
-funty =  { workspace = true }
-anyhow =  { workspace =true }
+funty = { workspace = true }
+anyhow = { workspace = true }
 log = { workspace = true, features = ["std", "serde"] }
 serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -26,5 +29,4 @@ toml = { workspace = true }
 bitvec = { workspace = true }
 dotenv = { workspace = true }
 lazy_static = { workspace = true }
-
-
+consensus-types = { package = "webb-consensus-types", path = "../consensus-types", default-features = false }

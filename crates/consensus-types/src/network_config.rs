@@ -2,7 +2,8 @@ use crate::compute_epoch_at_slot;
 use alloc::string::String;
 use codec::{Decode, Encode};
 use core::str::FromStr;
-use eth_types::eth2::{Epoch, ForkVersion, Slot};
+use eth_types::eth2::{Epoch, ForkVersion, HeaderUpdate, Slot};
+use merkle_proof::{merkle_root_from_branch, verify_merkle_proof};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, scale_info::TypeInfo, Serialize, Deserialize)]
@@ -22,6 +23,15 @@ impl FromStr for Network {
 			_ => Err(alloc::format!("Unknown network: {input}")),
 		}
 	}
+}
+
+pub struct ProofSize {
+	pub beacon_block_body_tree_depth: usize,
+	pub l1_beacon_block_body_tree_execution_payload_index: usize,
+	pub l2_execution_payload_tree_execution_block_index: usize,
+	pub l1_beacon_block_body_proof_size: usize,
+	pub l2_execution_payload_proof_size: usize,
+	pub execution_proof_size: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, scale_info::TypeInfo, Serialize, Deserialize)]
@@ -70,11 +80,11 @@ impl NetworkConfig {
 					0x61, 0x05, 0x2a, 0xcf, 0x3f, 0x92, 0x09, 0xc0, 0x0e, 0x4e, 0xfb, 0xaa, 0xdd,
 					0xac, 0x09, 0xed, 0x9b, 0x80, 0x78,
 				],
-				bellatrix_fork_version: [144, 0, 0, 113],
+				bellatrix_fork_version: [0x90, 0x00, 0x00, 0x71],
 				bellatrix_fork_epoch: 100,
-				capella_fork_version: [144, 0, 0, 114],
+				capella_fork_version: [0x90, 0x00, 0x00, 0x72],
 				capella_fork_epoch: 56832,
-				deneb_fork_version: [144, 0, 0, 115],
+				deneb_fork_version: [0x90, 0x00, 0x00, 0x73],
 				deneb_fork_epoch: 132608,
 			},
 		}
@@ -98,5 +108,62 @@ impl NetworkConfig {
 
 	pub fn compute_fork_version_by_slot(&self, slot: Slot) -> Option<ForkVersion> {
 		self.compute_fork_version(compute_epoch_at_slot(slot))
+	}
+
+	pub fn compute_proof_size(&self, epoch: Epoch) -> ProofSize {
+		if epoch >= self.deneb_fork_epoch {
+			return ProofSize {
+				beacon_block_body_tree_depth: 4,
+				l1_beacon_block_body_tree_execution_payload_index: 9,
+				l2_execution_payload_tree_execution_block_index: 12,
+				l1_beacon_block_body_proof_size: 4,
+				l2_execution_payload_proof_size: 5,
+				execution_proof_size: 9,
+			}
+		}
+
+		ProofSize {
+			beacon_block_body_tree_depth: 4,
+			l1_beacon_block_body_tree_execution_payload_index: 9,
+			l2_execution_payload_tree_execution_block_index: 12,
+			l1_beacon_block_body_proof_size: 4,
+			l2_execution_payload_proof_size: 4,
+			execution_proof_size: 8,
+		}
+	}
+
+	pub fn compute_proof_size_by_slot(&self, slot: Slot) -> ProofSize {
+		self.compute_proof_size(compute_epoch_at_slot(slot))
+	}
+
+	pub fn validate_beacon_block_header_update(&self, header_update: &HeaderUpdate) -> bool {
+		let branch = &header_update.execution_hash_branch;
+		let proof_size = self.compute_proof_size_by_slot(header_update.beacon_header.slot);
+		if branch.len() != proof_size.execution_proof_size {
+			return false
+		}
+
+		let l2_proof: crate::Vec<_> = branch[0..proof_size.l2_execution_payload_proof_size]
+			.iter()
+			.map(|x| x.0)
+			.collect();
+		let l1_proof: crate::Vec<_> = branch
+			[proof_size.l2_execution_payload_proof_size..proof_size.execution_proof_size]
+			.iter()
+			.map(|x| x.0)
+			.collect();
+		let execution_payload_hash = merkle_root_from_branch(
+			header_update.execution_block_hash.0,
+			&l2_proof,
+			proof_size.l2_execution_payload_proof_size,
+			proof_size.l2_execution_payload_tree_execution_block_index,
+		);
+		verify_merkle_proof(
+			execution_payload_hash,
+			&l1_proof,
+			proof_size.beacon_block_body_tree_depth,
+			proof_size.l1_beacon_block_body_tree_execution_payload_index,
+			header_update.beacon_header.body_root.0,
+		)
 	}
 }

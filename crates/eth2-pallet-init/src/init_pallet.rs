@@ -1,4 +1,5 @@
 use crate::{config::Config, eth_network::EthNetwork, substrate_pallet_client::EthClientPallet};
+use consensus_types::verify_merkle_proof;
 use eth_rpc_client::{
 	beacon_rpc_client::BeaconRPCClient, eth1_rpc_client::Eth1RPCClient,
 	light_client_snapshot_with_proof::LightClientSnapshotWithProof,
@@ -26,14 +27,12 @@ pub fn verify_light_client_snapshot(
 		return false
 	}
 
-	let branch =
-		consensus_types::convert_branch(&light_client_snapshot.current_sync_committee_branch);
-	merkle_proof::verify_merkle_proof(
-		light_client_snapshot.current_sync_committee.tree_hash_root(),
-		&branch,
+	verify_merkle_proof(
+		eth_types::H256(light_client_snapshot.current_sync_committee.tree_hash_root()),
+		&light_client_snapshot.current_sync_committee_branch,
 		CURRENT_SYNC_COMMITTEE_TREE_DEPTH.try_into().unwrap(),
 		CURRENT_SYNC_COMMITTEE_TREE_INDEX.try_into().unwrap(),
-		light_client_snapshot.beacon_header.state_root.0,
+		light_client_snapshot.beacon_header.state_root,
 	)
 }
 
