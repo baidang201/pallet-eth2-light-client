@@ -115,10 +115,9 @@ pub mod test_utils;
 
 // pub mod consensus;
 use consensus::{
-	compute_domain, compute_signing_root, compute_sync_committee_period, convert_branch,
-	get_participant_pubkeys, validate_beacon_block_header_update, DOMAIN_SYNC_COMMITTEE,
-	FINALITY_TREE_DEPTH, FINALITY_TREE_INDEX, MIN_SYNC_COMMITTEE_PARTICIPANTS,
-	SYNC_COMMITTEE_TREE_DEPTH, SYNC_COMMITTEE_TREE_INDEX,
+	compute_domain, compute_signing_root, compute_sync_committee_period, get_participant_pubkeys,
+	verify_merkle_proof, DOMAIN_SYNC_COMMITTEE, FINALITY_TREE_DEPTH, FINALITY_TREE_INDEX,
+	MIN_SYNC_COMMITTEE_PARTICIPANTS, SYNC_COMMITTEE_TREE_DEPTH, SYNC_COMMITTEE_TREE_INDEX,
 };
 
 #[frame_support::pallet]
@@ -736,7 +735,12 @@ impl<T: Config> Pallet<T> {
 		let finalized_beacon_header = Self::finalized_beacon_header(typed_chain_id)
 			.ok_or(Error::<T>::LightClientUpdateNotAllowed)?;
 		let finalized_period = compute_sync_committee_period(finalized_beacon_header.header.slot);
-		Self::verify_finality_branch(update, finalized_period, finalized_beacon_header)?;
+		Self::verify_finality_branch(
+			update,
+			finalized_period,
+			finalized_beacon_header,
+			typed_chain_id,
+		)?;
 
 		// Verify sync committee has sufficient participants
 		let sync_committee_bits =
@@ -770,6 +774,7 @@ impl<T: Config> Pallet<T> {
 		update: &LightClientUpdate,
 		finalized_period: u64,
 		last_finalized_beacon_header: ExtendedBeaconBlockHeader,
+		typed_chain_id: TypedChainId,
 	) -> Result<(), DispatchError> {
 		// The active header will always be the finalized header because we don't accept updates
 		// without the finality update.
@@ -798,19 +803,24 @@ impl<T: Config> Pallet<T> {
 
 		// Verify that the `finality_branch`, confirms `finalized_header`
 		// to match the finalized checkpoint root saved in the state of `attested_header`.
-		let branch = convert_branch(&update.finality_update.finality_branch);
 		ensure!(
-			merkle_proof::verify_merkle_proof(
-				update.finality_update.header_update.beacon_header.tree_hash_root(),
-				&branch,
+			verify_merkle_proof(
+				H256(update.finality_update.header_update.beacon_header.tree_hash_root()),
+				&update.finality_update.finality_branch,
 				FINALITY_TREE_DEPTH.try_into().unwrap(),
 				FINALITY_TREE_INDEX.try_into().unwrap(),
-				update.attested_beacon_header.state_root.0
+				update.attested_beacon_header.state_root
 			),
 			Error::<T>::InvalidFinalityProof
 		);
 		ensure!(
-			validate_beacon_block_header_update(&update.finality_update.header_update),
+			Self::network_config_for_chain(typed_chain_id).is_some(),
+			Error::<T>::InvalidNetworkConfig
+		);
+		let network_config = Self::network_config_for_chain(typed_chain_id).unwrap();
+		ensure!(
+			network_config
+				.validate_beacon_block_header_update(&update.finality_update.header_update),
 			Error::<T>::InvalidExecutionBlockHashProof
 		);
 
@@ -823,17 +833,15 @@ impl<T: Config> Pallet<T> {
 				Error::<T>::SyncCommitteeUpdateNotPresent
 			);
 			let sync_committee_update = update.sync_committee_update.as_ref().unwrap();
-			let branch = convert_branch(&sync_committee_update.next_sync_committee_branch);
 			ensure!(
-				merkle_proof::verify_merkle_proof(
-					sync_committee_update.next_sync_committee.tree_hash_root(),
-					&branch,
+				verify_merkle_proof(
+					H256(sync_committee_update.next_sync_committee.tree_hash_root()),
+					&sync_committee_update.next_sync_committee_branch,
 					SYNC_COMMITTEE_TREE_DEPTH.try_into().unwrap(),
 					SYNC_COMMITTEE_TREE_INDEX.try_into().unwrap(),
-					update.attested_beacon_header.state_root.0
+					update.attested_beacon_header.state_root
 				),
-				// Invalid next sync committee proof
-				Error::<T>::InvalidNextSyncCommitteeProof
+				"Invalid next sync committee proof"
 			);
 		}
 

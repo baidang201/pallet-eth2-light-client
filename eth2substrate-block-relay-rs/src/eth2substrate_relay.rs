@@ -111,6 +111,11 @@ impl Eth2SubstrateRelay {
 			Some(config.beacon_rpc_version.clone()),
 		);
 
+		let slot = beacon_rpc_client
+			.get_last_slot_number()
+			.await
+			.expect("Error on fetching last slot number");
+
 		info!(target: "relay", "=== Beacon RPC Instantiated === ");
 		let next_light_client_update =
 			Self::get_light_client_update_from_file(config, &beacon_rpc_client)
@@ -121,6 +126,18 @@ impl Eth2SubstrateRelay {
 
 		let eth2_network: NetworkConfig =
 			NetworkConfig::new(&Network::from_str(&config.ethereum_network.to_string()).unwrap());
+
+		let fork_version = eth2_network.compute_fork_version_by_slot(slot.as_u64()).expect(
+			"Error on computing fork version. Check if the fork epoch is correct for the current slot",
+		);
+
+		let fork_epoch = if fork_version == eth2_network.bellatrix_fork_version {
+			eth2_network.bellatrix_fork_epoch
+		} else if fork_version == eth2_network.capella_fork_version {
+			eth2_network.capella_fork_epoch
+		} else {
+			eth2_network.deneb_fork_epoch
+		};
 
 		let eth2substrate_relayer = Eth2SubstrateRelay {
 			beacon_rpc_client,
@@ -134,8 +151,8 @@ impl Eth2SubstrateRelay {
 			sleep_time_on_sync_secs: config.sleep_time_on_sync_secs,
 			sleep_time_after_submission_secs: config.sleep_time_after_submission_secs,
 			eth_client_pallet: eth_pallet,
-			fork_epoch: eth2_network.capella_fork_epoch,
-			fork_version: eth2_network.capella_fork_version,
+			fork_epoch,
+			fork_version,
 			genesis_validators_root: eth2_network.genesis_validators_root,
 			get_light_client_update_by_epoch: config
 				.get_light_client_update_by_epoch

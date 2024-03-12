@@ -140,6 +140,10 @@ pub struct BlockHeader {
 	pub base_fee_per_gas: Option<u64>,
 	pub withdrawals_root: Option<H256>,
 
+	pub blob_gas_used: Option<U256>,
+	pub excess_blob_gas: Option<U256>,
+	pub parent_beacon_block_root: Option<H256>,
+
 	pub hash: Option<H256>,
 	pub partial_hash: Option<H256>,
 }
@@ -170,6 +174,15 @@ impl BlockHeader {
 		if self.withdrawals_root.is_some() {
 			list_size += 1;
 		}
+		if self.blob_gas_used.is_some() {
+			list_size += 1;
+		}
+		if self.excess_blob_gas.is_some() {
+			list_size += 1;
+		}
+		if self.parent_beacon_block_root.is_some() {
+			list_size += 1;
+		}
 
 		stream.begin_list(list_size);
 
@@ -198,6 +211,18 @@ impl BlockHeader {
 
 		if let Some(withdrawals_root) = &self.withdrawals_root {
 			stream.append(withdrawals_root);
+		}
+
+		if let Some(blob_gas_used) = &self.blob_gas_used {
+			stream.append(blob_gas_used);
+		}
+
+		if let Some(excess_blob_gas) = &self.excess_blob_gas {
+			stream.append(excess_blob_gas);
+		}
+
+		if let Some(parent_beacon_block_root) = &self.parent_beacon_block_root {
+			stream.append(parent_beacon_block_root);
 		}
 	}
 
@@ -237,6 +262,9 @@ impl RlpDecodable for BlockHeader {
 			nonce: serialized.val_at(14)?,
 			base_fee_per_gas: serialized.val_at(15).ok(),
 			withdrawals_root: serialized.val_at(16).ok(),
+			blob_gas_used: serialized.val_at(17).ok(),
+			excess_blob_gas: serialized.val_at(18).ok(),
+			parent_beacon_block_root: serialized.val_at(19).ok(),
 			hash: None,
 			partial_hash: None,
 		};

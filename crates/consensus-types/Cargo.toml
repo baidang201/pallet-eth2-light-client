@@ -7,7 +7,9 @@ authors = { workspace = true }
 
 [dependencies]
 
-eth-types = { path = "../eth-types", default-features = false, features = ["eth2"] }
+eth-types = { path = "../eth-types", default-features = false, features = [
+    "eth2",
+] }
 eth2-ssz = { package = "webb-eth2-ssz", path = "../ssz", default-features = false }
 tree-hash = { package = "webb-tree-hash", path = "../tree-hash", default-features = false }
 tree-hash-derive = { package = "webb-tree-hash-derive", path = "../tree-hash-derive", default-features = false }
@@ -24,6 +26,7 @@ rlp-derive = { workspace = true }
 ethereum-types = { workspace = true, features = ["codec", "rlp", "serialize"] }
 derive_more = { workspace = true }
 tiny-keccak = { workspace = true }
+eth2_hashing = { package = "webb-eth2-hashing", path = "../eth2-hashing", default-features = false }
 
 [features]
 default = ["std"]
