@@ -95,7 +95,7 @@ milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", default-feature
 types = { git = "https://github.com/sigp/lighthouse", ref = "b5bae6e" }
 merkle_proof = { git = "https://github.com/sigp/lighthouse", ref = "b5bae6e", default-features = false }
 tree_hash = { version = "0.5.0", features = ["arbitrary"] }
-eth2_hashing = { workspace = true }
+eth2_hashing = { package = "ethereum_hashing", version = "1.0.0-beta.2" }
 ethereum_ssz = { version = "0.5.0", features = [
     "arbitrary",
 ], default-features = false }

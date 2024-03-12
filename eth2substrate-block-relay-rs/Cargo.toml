@@ -17,7 +17,7 @@ lc-relay-config = { package = "webb-lc-relay-config", path = "../crates/lc-relay
 lc-relayer-context = { package = "webb-lc-relayer-context", path = "../crates/lc-relayer-context" }
 
 types = { workspace = true }
-eth2_hashing = { package = "ethereum_hashing", version = "1.0.0-beta.2" }
+eth2_hashing = { workspace = true }
 eth2_ssz = { package = "ethereum_ssz", version = "0.5.0", features = [
     "arbitrary",
 ] }
