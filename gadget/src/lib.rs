@@ -5,7 +5,8 @@ use eth2_pallet_init::{init_pallet, substrate_pallet_client::EthClientPallet};
 use eth2_to_substrate_relay::eth2substrate_relay::Eth2SubstrateRelay;
 use lc_relay_config::RelayConfig;
 use lc_relayer_context::LightClientRelayerContext;
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc, fs, path::Path};
+use std::os::unix::fs::PermissionsExt;
 use subxt::ext::sp_core::crypto::{Ss58Codec, Ss58AddressFormat};
 use subxt::ext::sp_core::Pair;
 use subxt::utils::AccountId32;
@@ -37,18 +38,53 @@ pub async fn ignite_lc_relayer(ctx: LightClientRelayerContext) -> anyhow::Result
 			},
 		};
 		let api_client = Arc::new(api_client);
-		let pair = std::fs::read_to_string(&ctx.lc_init_config.path_to_signer_secret_key)
-			.expect("failed to read secret key");
-		let pair = parse_suri(&pair)
-			.expect("invalid key format");
-		let pair = subxt::ext::sp_core::sr25519::Pair::from_string(&pair, None);
+		// Read path first will change to string later for parsing
+		let path = Path::new(&ctx.lc_init_config.path_to_signer_secret_key);
+		// Check if the file exists, its permissions, and if it's empty
+        let pair = if path.exists() {
+			match fs::metadata(path) {
+				Ok(metadata) => {
+					let permissions = metadata.permissions();
+					if permissions.mode() & 0o777 == 0o600 {
+						match fs::read_to_string(path) {
+							Ok(content) if !content.trim().is_empty() => {
+								match parse_suri(&content) {
+									Some(s) => subxt::ext::sp_core::sr25519::Pair::from_string(&s, None).ok(),
+									None => {
+										tracing::info!("Invalid SURI format in the file.");
+										None
+									}
+								}
+							}
+							Ok(_) => {
+								tracing::info!("Secret key file is empty");
+								None
+							}
+							Err(e) => {
+								tracing::info!("Failed to read the secret key file: {:?}", e);
+								None
+							}
+						}
+					} else {
+						tracing::info!("Invalid file permissions: {:o}. Required permissions: 0600", permissions.mode());
+						None
+					}
+				},
+				Err(e) => {
+					tracing::info!("Failed to get metadata for the secret key file: {:?}", e);
+					None
+				}
+			}
+		} else {
+			tracing::info!("Secret key file does not exist at the specified path: {:?}", path);
+			None
+		};
 		let network = ctx.lc_relay_config.ethereum_network.as_typed_chain_id();
-		let mut eth_pallet = if let Ok(pair) = pair {
+		let mut eth_pallet = if let Some(pair) = pair {
 			// Substrate default addr prefix
 			let pub_addr = pair.public().to_ss58check();
 			// GGX Prefix
 			let custom_prefix = Ss58AddressFormat::custom(8888);
-			//let acct_id = AccountId32::from(pair.public());
             let ggx_addr = pair.public().to_ss58check_with_version(custom_prefix);
 			tracing::info!(target: "relay", "Initializing client with signer: pub_addr = {}, ggx_addr = {}", pub_addr, ggx_addr);
 			EthClientPallet::new_with_pair(api_client, pair, network)
