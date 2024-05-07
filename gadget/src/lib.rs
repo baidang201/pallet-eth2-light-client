@@ -198,7 +198,7 @@ pub fn parse_suri(suri: &str) -> Option<String> {
 	// If formatting has some hidden chars, new lines, extra spaces clean it up
 	let cleaned_suri = suri.replace("\"", "").replace("\n", "").trim().to_string();
 	// Regex to make sure we meet suri standards
-	let re = Regex::new(r"^(0x[0-9a-fA-F]{64})|([a-zA-Z]+(?:\s+[a-zA-Z]+)*)(/[\d'/]+)?(///\S+)?$").unwrap();
+	let re = Regex::new(r"^((0x)?[0-9a-fA-F]{64}|(\b\w+\b\s*){12,24})(/[\d'/]*(/[\d'/]+)*)?(///\S*)?$").unwrap();
 	re.captures(&cleaned_suri).map(|caps| {
         caps.iter()
             .skip(1) 
