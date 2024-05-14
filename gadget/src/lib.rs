@@ -39,46 +39,7 @@ pub async fn ignite_lc_relayer(ctx: LightClientRelayerContext) -> anyhow::Result
 		};
 		let api_client = Arc::new(api_client);
 		// Read path first will change to string later for parsing
-		let path = Path::new(&ctx.lc_init_config.path_to_signer_secret_key);
-		// Check if the file exists, its permissions, and if it's empty
-        let pair = if path.exists() {
-			match fs::metadata(path) {
-				Ok(metadata) => {
-					let permissions = metadata.permissions();
-					if permissions.mode() & 0o777 == 0o600 {
-						match fs::read_to_string(path) {
-							Ok(content) if !content.trim().is_empty() => {
-								match parse_suri(&content) {
-									Some(s) => subxt::ext::sp_core::sr25519::Pair::from_string(&s, None).ok(),
-									None => {
-										tracing::info!("Invalid SURI format in the file.");
-										None
-									}
-								}
-							}
-							Ok(_) => {
-								tracing::info!("Secret key file is empty");
-								None
-							}
-							Err(e) => {
-								tracing::info!("Failed to read the secret key file: {:?}", e);
-								None
-							}
-						}
-					} else {
-						tracing::info!("Invalid file permissions: {:o}. Required permissions: 0600", permissions.mode());
-						None
-					}
-				},
-				Err(e) => {
-					tracing::info!("Failed to get metadata for the secret key file: {:?}", e);
-					None
-				}
-			}
-		} else {
-			tracing::info!("Secret key file does not exist at the specified path: {:?}", path);
-			None
-		};
+		let path = get_pair_from_path(&ctx.lc_init_config.path_to_signer_secret_key);
 		let network = ctx.lc_relay_config.ethereum_network.as_typed_chain_id();
 		let mut eth_pallet = if let Some(pair) = pair {
 			// Substrate default addr prefix
@@ -205,4 +166,48 @@ pub fn parse_suri(suri: &str) -> Option<String> {
             .filter_map(|m| m.map(|m| m.as_str().trim())) // Convert matches to strings, trim them
             .collect::<String>() // Concatenate all valid groups into a single String
     })
+}
+
+fn get_pair_from_path(path: &str) -> Option<Pair> {
+    let path = Path::new(path);
+
+    if !path.exists() {
+        info!("Secret key file does not exist at the specified path: {:?}", path);
+        return None;
+    }
+
+    let metadata = match fs::metadata(path) {
+        Ok(metadata) => metadata,
+        Err(e) => {
+            info!("Failed to get metadata for the secret key file: {:?}", e);
+            return None;
+        },
+    };
+
+    let permissions = metadata.permissions();
+    if permissions.mode() & 0o777 != 0o600 {
+        info!("Invalid file permissions: {:o}. Required permissions: 0600", permissions.mode());
+        return None;
+    }
+
+    let content = match fs::read_to_string(path) {
+        Ok(content) => content,
+        Err(e) => {
+            info!("Failed to read the secret key file: {:?}", e);
+            return None;
+        },
+    };
+
+    if content.trim().is_empty() {
+        info!("Secret key file is empty");
+        return None;
+    }
+
+    match parse_suri(&content) {
+        Some(s) => Pair::from_string(&s, None).ok(),
+        None => {
+            info!("Invalid SURI format in the file.");
+            None
+        },
+    }
 }
