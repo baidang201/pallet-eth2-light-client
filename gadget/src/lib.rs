@@ -5,10 +5,14 @@ use eth2_pallet_init::{init_pallet, substrate_pallet_client::EthClientPallet};
 use eth2_to_substrate_relay::eth2substrate_relay::Eth2SubstrateRelay;
 use lc_relay_config::RelayConfig;
 use lc_relayer_context::LightClientRelayerContext;
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc, fs, path::Path};
+use std::os::unix::fs::PermissionsExt;
+use subxt::ext::sp_core::crypto::{Ss58Codec, Ss58AddressFormat};
 use subxt::ext::sp_core::Pair;
+use subxt::utils::AccountId32;
 use tokio::signal::unix;
 use webb_proposals::TypedChainId;
+use regex::Regex;
 pub mod errors;
 
 /// Webb Relayer gadget initialization parameters.
@@ -34,12 +38,16 @@ pub async fn ignite_lc_relayer(ctx: LightClientRelayerContext) -> anyhow::Result
 			},
 		};
 		let api_client = Arc::new(api_client);
-		let pair = std::fs::read_to_string(&ctx.lc_init_config.path_to_signer_secret_key)
-			.expect("failed to read secret key");
-		let pair = subxt::ext::sp_core::sr25519::Pair::from_string(&pair, None);
+		// Read path first will change to string later for parsing
+		let path = get_pair_from_path(&ctx.lc_init_config.path_to_signer_secret_key);
 		let network = ctx.lc_relay_config.ethereum_network.as_typed_chain_id();
-		let mut eth_pallet = if let Ok(pair) = pair {
-			tracing::info!(target: "relay", "=== Initializing client with signer ===");
+		let mut eth_pallet = if let Some(pair) = pair {
+			// Substrate default addr prefix
+			let pub_addr = pair.public().to_ss58check();
+			// GGX Prefix
+			let custom_prefix = Ss58AddressFormat::custom(8888);
+            let ggx_addr = pair.public().to_ss58check_with_version(custom_prefix);
+			tracing::info!(target: "relay", "Initializing client with signer: pub_addr = {}, ggx_addr = {}", pub_addr, ggx_addr);
 			EthClientPallet::new_with_pair(api_client, pair, network)
 		} else {
 			tracing::info!(target: "relay", "=== Initializing client without signer. Alice used as default ===");
@@ -145,4 +153,61 @@ fn loads_light_client_pallet_init_config(
 	config_path: &PathBuf,
 ) -> anyhow::Result<eth2_pallet_init::config::Config> {
 	Ok(eth2_pallet_init::config::Config::load_from_toml(config_path.clone()))
+}
+
+pub fn parse_suri(suri: &str) -> Option<String> {
+	// If formatting has some hidden chars, new lines, extra spaces clean it up
+	let cleaned_suri = suri.replace("\"", "").replace("\n", "").trim().to_string();
+	// Regex to make sure we meet suri standards
+	let re = Regex::new(r"^((0x)?[0-9a-fA-F]{64}|(\b\w+\b\s*){12,24})(/[\d'/]*(/[\d'/]+)*)?(///\S*)?$").unwrap();
+	re.captures(&cleaned_suri).map(|caps| {
+        caps.iter()
+            .skip(1) 
+            .filter_map(|m| m.map(|m| m.as_str().trim())) // Convert matches to strings, trim them
+            .collect::<String>() // Concatenate all valid groups into a single String
+    })
+}
+
+fn get_pair_from_path(path: &str) -> Option<Pair> {
+    let path = Path::new(path);
+
+    if !path.exists() {
+        info!("Secret key file does not exist at the specified path: {:?}", path);
+        return None;
+    }
+
+    let metadata = match fs::metadata(path) {
+        Ok(metadata) => metadata,
+        Err(e) => {
+            info!("Failed to get metadata for the secret key file: {:?}", e);
+            return None;
+        },
+    };
+
+    let permissions = metadata.permissions();
+    if permissions.mode() & 0o777 != 0o600 {
+        info!("Invalid file permissions: {:o}. Required permissions: 0600", permissions.mode());
+        return None;
+    }
+
+    let content = match fs::read_to_string(path) {
+        Ok(content) => content,
+        Err(e) => {
+            info!("Failed to read the secret key file: {:?}", e);
+            return None;
+        },
+    };
+
+    if content.trim().is_empty() {
+        info!("Secret key file is empty");
+        return None;
+    }
+
+    match parse_suri(&content) {
+        Some(s) => Pair::from_string(&s, None).ok(),
+        None => {
+            info!("Invalid SURI format in the file.");
+            None
+        },
+    }
 }

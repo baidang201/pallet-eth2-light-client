@@ -13,6 +13,7 @@ subxt = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "time"] }
 backoff = { workspace = true }
 async-trait =  { workspace = true }
+regex = "1.10.2"
 
 # Eth2 Light Client
 eth2-to-substrate-relay = { path = "../eth2substrate-block-relay-rs" }
