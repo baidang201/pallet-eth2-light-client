@@ -7,6 +7,7 @@ use eth_types::{
 	primitives::{FinalExecutionOutcomeView, FinalExecutionStatus},
 	BlockHeader, H256,
 };
+use log::info;
 
 use std::sync::Arc;
 use subxt::{error::DispatchError, utils::AccountId32};
