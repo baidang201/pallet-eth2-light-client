@@ -362,6 +362,7 @@ impl Eth2SubstrateRelay {
 
 	async fn submit_execution_blocks(&mut self, headers: Vec<BlockHeader>) -> bool {
 		info!(target: "relay", "Try submit headers batch");
+		info!(target: "relay", "Headers to submit: {:?}", headers);
 		let execution_outcome = return_val_on_fail!(
 			self.eth_client_pallet.send_headers(&headers).await,
 			"Error on header submission",

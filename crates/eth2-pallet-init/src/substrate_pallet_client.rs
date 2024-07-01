@@ -314,9 +314,13 @@ impl EthClientPalletTrait for EthClientPallet {
 		}
 
 		let mut txes = vec![];
+		info!(target: "relay", "Filling Header Vector {:?}", headers);
 		for header in headers {
 			let decoded_tcid = Decode::decode(&mut self.chain.encode().as_slice()).unwrap();
 			let decoded_header = Decode::decode(&mut header.encode().as_slice()).unwrap();
+			info!(target: "relay", "Decoded TCID: {:?}", decoded_tcid);
+       		info!(target: "relay", "Decoded Header: {:?}", decoded_header);
+
 			let call = pallet_eth2_light_client::pallet::Call::submit_execution_header {
 				typed_chain_id: decoded_tcid,
 				block_header: decoded_header,
@@ -327,8 +331,11 @@ impl EthClientPalletTrait for EthClientPallet {
 		}
 
 		let batch_call = tangle::tx().utility().force_batch(txes);
+		info!(target: "relay", "Created batch call: {:?}", batch_call);
 
+		info!(target: "relay", "Submitting header batch");
 		let tx_hash = self.submit(&batch_call).await?;
+		info!(target: "relay", "Transaction hash: {:?}", tx_hash);
 		Ok(FinalExecutionOutcomeView {
 			status: FinalExecutionStatus::Success,
 			transaction_hash: Some(tx_hash),
