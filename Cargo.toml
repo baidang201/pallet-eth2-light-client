@@ -22,6 +22,7 @@ members = [
 exclude = ["pallets/light-verifier", "pallets/light-proposals"]
 
 [features]
+default = ["brooklyn"]
 brooklyn = []
 sydney = []
 toronto = []
