@@ -79,3 +79,6 @@ std = [
 testing = ["std"]
 
 try-runtime = ["frame-support/try-runtime"]
+brooklyn = []
+sydney = []
+toronto = []
