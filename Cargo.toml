@@ -21,12 +21,6 @@ members = [
 
 exclude = ["pallets/light-verifier", "pallets/light-proposals"]
 
-[features]
-default = ["brooklyn"]
-brooklyn = []
-sydney = []
-toronto = []
-
 [patch]
 [patch.crates-io]
 arbitrary = { git = "https://github.com/michaelsproul/arbitrary", rev = "a572fd8743012a4f1ada5ee5968b1b3619c427ba", default-features = false }
