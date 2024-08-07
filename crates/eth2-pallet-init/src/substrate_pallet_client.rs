@@ -22,6 +22,18 @@ use webb::substrate::{
 };
 use webb_proposals::TypedChainId;
 
+#[cfg(feature = "brooklyn")]
+#[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_brooklyn.scale")]
+pub mod tangle {}
+
+#[cfg(feature = "sydney")]
+#[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_sydney.scale")]
+pub mod tangle {}
+
+#[cfg(feature = "toronto")]
+#[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_toronto.scale")]
+pub mod tangle {}
+
 use tangle::runtime_types::pallet_eth2_light_client;
 
 pub fn convert_typed_chain_ids(
@@ -447,15 +459,3 @@ fn get_sr25519_keys_from_suri<T: AsRef<str>>(suri: T) -> anyhow::Result<Pair> {
 		}
 	}
 }
-
-#[cfg(feature = "brooklyn")]
-#[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_brooklyn.scale")]
-pub mod tangle {}
-
-#[cfg(feature = "sydney")]
-#[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_sydney.scale")]
-pub mod tangle {}
-
-#[cfg(feature = "toronto")]
-#[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_toronto.scale")]
-pub mod tangle {}
