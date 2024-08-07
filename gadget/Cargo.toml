@@ -5,6 +5,11 @@ edition = { workspace = true }
 license = { workspace = true }
 authors = { workspace = true}
 
+[features]
+brooklyn = ["webb-eth2-pallet-init/brooklyn"]
+sydney = ["webb-eth2-pallet-init/sydney"]
+toronto = ["webb-eth2-pallet-init/toronto"]
+
 [dependencies]
 anyhow = { workspace = true }
 tracing = { workspace = true }
