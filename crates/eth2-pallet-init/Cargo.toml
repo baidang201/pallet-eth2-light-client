@@ -5,6 +5,11 @@ edition = { workspace = true }
 license = { workspace = true }
 authors = { workspace = true }
 
+[features]
+brooklyn = []
+sydney = []
+toronto = []
+
 [dependencies]
 types = { workspace = true }
 tree-hash = { package = "webb-tree-hash",  path = "../tree-hash", default-features = false }
