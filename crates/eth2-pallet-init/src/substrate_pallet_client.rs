@@ -22,19 +22,19 @@ use webb::substrate::{
 };
 use webb_proposals::TypedChainId;
 
-#[cfg(feature = "brooklyn")]
+#[cfg(all(feature = "brooklyn"), not(feature = "sydney"), not(feature = "toronto"))]
 #[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_brooklyn.scale")]
 pub mod tangle;
 
-#[cfg(all(not(feature = "brooklyn"), feature = "toronto"))]
-#[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_toronto.scale")]
-pub mod tangle;
-
-#[cfg(all(not(feature = "brooklyn"), not(feature = "toronto"), feature = "sydney"))]
+#[cfg(all(not(feature = "brooklyn"), feature = "sydney"))]
 #[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_sydney.scale")]
 pub mod tangle;
 
-#[cfg(all(not(feature = "brooklyn"), not(feature = "toronto"), not(feature = "sydney")))]
+#[cfg(all(not(feature = "brooklyn"), not(feature = "sydney"), feature = "toronto"))]
+#[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_toronto.scale")]
+pub mod tangle;
+
+#[cfg(all(not(feature = "brooklyn"), not(feature = "sydney"), not(feature = "toronto")))]
 compile_error!("One of the features 'brooklyn', 'sydney', or 'toronto' must be enabled.");
 
 use tangle::runtime_types::pallet_eth2_light_client;
