@@ -8,7 +8,7 @@ authors = { workspace = true}
 [features]
 brooklyn = ["eth2-pallet-init/brooklyn"]
 sydney = ["eth2-pallet-init/sydney"]
-toronto = ["eth2-pallet-init/toronto"]
+
 
 [dependencies]
 anyhow = { workspace = true }

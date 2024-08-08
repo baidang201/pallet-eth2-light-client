@@ -22,7 +22,7 @@ use webb::substrate::{
 };
 use webb_proposals::TypedChainId;
 
-#[cfg(all(feature = "brooklyn"), not(feature = "sydney"), not(feature = "toronto"))]
+#[cfg(all(feature = "brooklyn"), not(feature = "sydney"))]
 #[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_brooklyn.scale")]
 pub mod tangle;
 
@@ -30,12 +30,8 @@ pub mod tangle;
 #[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_sydney.scale")]
 pub mod tangle;
 
-#[cfg(all(not(feature = "brooklyn"), not(feature = "sydney"), feature = "toronto"))]
-#[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_toronto.scale")]
-pub mod tangle;
-
-#[cfg(all(not(feature = "brooklyn"), not(feature = "sydney"), not(feature = "toronto")))]
-compile_error!("One of the features 'brooklyn', 'sydney', or 'toronto' must be enabled.");
+#[cfg(all(not(feature = "brooklyn"), not(feature = "sydney")))]
+compile_error!("One of the features 'brooklyn' or 'sydney' must be enabled.");
 
 use tangle::runtime_types::pallet_eth2_light_client;
 
@@ -341,9 +337,6 @@ impl EthClientPalletTrait for EthClientPallet {
 
 			#[cfg(feature = "sydney")]
 			let tx = tangle::runtime_types::ggxchain_runtime_sydney::RuntimeCall::Eth2Client(call);
-
-			#[cfg(feature = "toronto")]
-			let tx = tangle::runtime_types::ggxchain_runtime_toronto::RuntimeCall::Eth2Client(call);
 			txes.push(tx);
 		}
 
