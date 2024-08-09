@@ -321,8 +321,11 @@ impl EthClientPalletTrait for EthClientPallet {
 				typed_chain_id: decoded_tcid,
 				block_header: decoded_header,
 			};
-			let tx =
-				tangle::runtime_types::ggxchain_runtime_brooklyn::RuntimeCall::Eth2Client(call);
+			#[cfg(feature = "brooklyn")]
+			let tx = tangle::runtime_types::ggxchain_runtime_brooklyn::RuntimeCall::Eth2Client(call);
+
+			#[cfg(feature = "sydney")]
+			let tx = tangle::runtime_types::ggxchain_runtime_sydney::RuntimeCall::Eth2Client(call);
 			txes.push(tx);
 		}
 
@@ -442,5 +445,13 @@ fn get_sr25519_keys_from_suri<T: AsRef<str>>(suri: T) -> anyhow::Result<Pair> {
 	}
 }
 
-#[subxt::subxt(runtime_metadata_path = "./metadata/ggxchain-runtime.scale")]
+#[cfg(all(feature = "brooklyn", not(feature = "sydney")))]
+#[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_brooklyn.scale")]
 pub mod tangle {}
+
+#[cfg(all(not(feature = "brooklyn"), feature = "sydney"))]
+#[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_sydney.scale")]
+pub mod tangle {}
+
+#[cfg(all(not(feature = "brooklyn"), not(feature = "sydney")))]
+compile_error!("One of the features 'brooklyn' or 'sydney' must be enabled.");
