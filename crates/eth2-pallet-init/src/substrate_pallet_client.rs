@@ -447,11 +447,11 @@ fn get_sr25519_keys_from_suri<T: AsRef<str>>(suri: T) -> anyhow::Result<Pair> {
 
 #[cfg(all(feature = "brooklyn", not(feature = "sydney")))]
 #[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_brooklyn.scale")]
-pub mod tangle;
+pub mod tangle {}
 
 #[cfg(all(not(feature = "brooklyn"), feature = "sydney"))]
 #[subxt::subxt(runtime_metadata_path = "./metadata/ggxruntime_sydney.scale")]
-pub mod tangle;
+pub mod tangle {}
 
 #[cfg(all(not(feature = "brooklyn"), not(feature = "sydney")))]
 compile_error!("One of the features 'brooklyn' or 'sydney' must be enabled.");
